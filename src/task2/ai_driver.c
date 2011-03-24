@@ -1,15 +1,22 @@
+/* Project: OS Course Project */
+/* Author:  Xie Song <me@aifreedom.com> */
+/* Date:    March 24, 2011 */
+/* Remarks: A driver for a pseudo character device, outputing numbers
+ *          continuously */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 
 #define DEVICE_NAME "aimod"
-#define BUF_LEN 17
+#define BUF_LEN 300
 #define SUCCESS 0
 
 MODULE_AUTHOR("Xie Song <me@aifreedom.com>");
 MODULE_LICENSE("GPLv3"); 
 
+/* Declare file operation functions */
 static int ai_open(struct inode *inode, struct file *file);
 static int ai_release(struct inode *inode, struct file *file);
 static ssize_t ai_read(struct file *filp, char *buffer,
@@ -60,8 +67,8 @@ static int ai_open(struct inode *inode, struct file *file)
 		return -EBUSY;
 
 	Device_Open++;
-	sprintf(buf, "%s: Device opened.\n", DEVICE_NAME);
-	/* buf_ptr = buf; */
+	printk(KERN_ALERT "%s: Device opened.\n", DEVICE_NAME);
+
 	try_module_get(THIS_MODULE);
 
 	return SUCCESS;
@@ -115,13 +122,9 @@ static int ai_release(struct inode *inode, struct file *file)
 {
 	Device_Open--;		/* We're now ready for our next caller */
 
-	/* 
-	 * Decrement the usage count, or else once you opened the file, you'll
-	 * never get get rid of the module. 
-	 */
 	module_put(THIS_MODULE);
-    printk(KERN_ALERT "%s: Device released.\n",
-           DEVICE_NAME);
+
+    printk(KERN_ALERT "%s: Device released.\n", DEVICE_NAME);
 	return 0;
 }
 
@@ -129,7 +132,8 @@ static int ai_release(struct inode *inode, struct file *file)
 static ssize_t
 ai_write(struct file *filp, const char *buff, size_t len, loff_t * off)
 {
-     printk(KERN_ALERT "%s: Sorry, this operation isn't supported.\n", DEVICE_NAME);
+     printk(KERN_ALERT "%s: Sorry, this operation isn't supported.\n",
+            DEVICE_NAME);
      return -EINVAL;
 }
 
