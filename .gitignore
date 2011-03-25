@@ -7,3 +7,7 @@ bin/*
 *.cmd
 *.mod
 *.mod.c
+/src/task2/task2
+/src/task1/gtk-demo
+/src/task1/task1
+
