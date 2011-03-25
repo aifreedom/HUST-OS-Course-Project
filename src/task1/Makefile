@@ -1,7 +1,6 @@
 CC = gcc
-all: task1 gtk-demo
 
-task1:
+all: task1 gtk-demo
 
 gtk-demo: gtk-demo.c
 	gcc `pkg-config --cflags --libs gtk+-2.0` $^ -o $@
@@ -9,4 +8,4 @@ gtk-demo: gtk-demo.c
 clean:
 	rm task1 gtk-demo
 
-.PHONY: clean
+.PHONY: clean all
