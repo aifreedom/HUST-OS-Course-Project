@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
           if (pid[i] == 0)
           {
                printf("Running gtk-demo with execl\n");
-               execlp("./gtk-demo", "gtk-demo", 0);
+               execlp("./gtk-demo", "gtk-demo", NULL);
                printf("Done!\n");
                break;
           }
