@@ -37,7 +37,7 @@ class ProcModel (Model):
     new_proc_stat = {}
     
     pid_stat_cols = ('pid',  'comm',  'state',  'ppid',  'pgrp',  'session',  'tty_nr',  'tpgid',  'flags',  'minflt',  'cminflt',  'majflt',  'cmajflt',  'utime',  'stime',  'cutime',  'cstime',  'priority',  'nice',  'num_threads',  'itrealvalue',  'starttime',  'vsize',  'rss',  'rsslim',  'startcode',  'endcode',  'startstack',  'kstkesp',  'kstkeip',  'signal',  'blocked',  'sigignore',  'sigcatch',  'wchan',  'nswap',  'cnswap',  'exit_signal',  'processor',  'rt_priority ',  'policy',  'delayacct_blkio_ticks',  'guest_time',  'cguest_time', )
-    cmdline_pattern = re.compile(r'^cpu( |\d+) ([\d ]+)$')
+    cpuline_pattern = re.compile(r'^cpu( |\d+) ([\d ]+)$')
 
     def __init__(self):
         Model.__init__(self)
@@ -101,7 +101,7 @@ class ProcModel (Model):
         it = iter(stat)
         for i in range(len(self.cpuinfo) + 1):
             line = it.next()
-            ma = self.cmdline_pattern.match(line)
+            ma = self.cpuline_pattern.match(line)
             if ma.group(1) == ' ':
                 # general cpu info
                 self.old_overall_stat = self.new_overall_stat
@@ -125,13 +125,17 @@ class ProcModel (Model):
             
             try:
                 stat = file(os.path.join('/', 'proc', pid, 'stat')).read().split(' ')
+                cmdline = file(os.path.join('/', 'proc', pid, 'cmdline')).read().split('\0')[0].split(' ')[0]
             except:
                 pass
 
             # Parse new stat
             new_list = dict(zip(self.pid_stat_cols, stat))
             new_stat = CPUStat(busy_time=int(new_list['utime']) + int(new_list['stime']), total_time=total_time)
-            
+            new_list['name'] = os.path.split(cmdline)[1]
+            if (new_list['name'] == ''):
+                new_list['name'] = new_list['comm'][1:-1]
+            # new_list['name'] = cmdline
 
             if not self.proc_list.has_key(pid):
                 self.proc_list[pid] = new_list
@@ -151,7 +155,7 @@ class ProcModel (Model):
 
             self.proc_list_store.set(it,
                                      0, int(new_list['pid']),
-                                     1, new_list['comm'],
+                                     1, new_list['name'],
                                      2, float(new_list['cpu_prcnt']),)
             
             # Update the list 
@@ -177,7 +181,7 @@ class ProcModel (Model):
         it = iter(stat)
         for i in range(len(self.cpuinfo) + 1):
             line = it.next()
-            ma = self.cmdline_pattern.match(line)
+            ma = self.cpuline_pattern.match(line)
             if ma.group(1) == ' ':
                 # general cpu info
                 self.new_overall_stat = CPUStat(ma.group(2))
