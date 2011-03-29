@@ -9,8 +9,19 @@ class ProcMntrCtrl (Controller):
 
     def register_view(self, view):
         # sets initial values for the view
-        self.view['main_window'].show()
-        self.view.set_cpu_info(self.model.cpu_info)
+        view['main_window'].show()
+        view.set_cpu_info(self.model.cpu_info)
+
+        tv = view['treeview']
+        tv.set_model(self.model.proc_list_store)
+
+        rend = gtk.CellRendererText()
+        col = gtk.TreeViewColumn('Pid', rend, text=0)
+        tv.append_column(col)
+
+        rend = gtk.CellRendererText()
+        col = gtk.TreeViewColumn('Process Name', rend, text=1)
+        tv.append_column(col)
     
     # gtk signals
     def on_main_window_show(self, widget):
