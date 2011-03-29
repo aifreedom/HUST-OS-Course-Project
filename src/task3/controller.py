@@ -11,12 +11,12 @@ class ProcMntrCtrl (Controller):
     def register_view(self, view):
         # sets initial values for the view
         view['main_window'].show()
-        view.set_cpu_info(self.model.cpu_info)
+        view.set_cpu_info(self.model.cpu_prcnt)
         view.set_proc_list_info(self.model.proc_list_store)
         self.sort_order = gtk.SORT_ASCENDING
         view['col_pid'].connect('clicked', self.on_column_clicked, 0)
         view['col_proc'].connect('clicked', self.on_column_clicked, 1)
-        view['col_state'].connect('clicked', self.on_column_clicked, 2)
+        view['col_cpu'].connect('clicked', self.on_column_clicked, 2)
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
 
 
@@ -53,14 +53,16 @@ class ProcMntrCtrl (Controller):
         (ls, iter) = s.get_selected()
         if iter is None:
             print "nothing selected"
+            self.view['button_end'].set_sensitive(False)
         else:
             self.curson_pid = ls.get_value(iter, 0)
             data0 = ls.get_value(iter, 0)
             data1 = ls.get_value(iter, 1)
+            self.view['button_end'].set_sensitive(True)
             print "Selected:", data0, data1
 
     # observable properties    
-    def property_cpu_info_value_change(self, model, old, new):
+    def property_cpu_prcnt_value_change(self, model, old, new):
         self.view.set_cpu_info(new)
         return
 
@@ -69,7 +71,7 @@ class ProcMntrCtrl (Controller):
     
     # private methods
     def __ref_timer(self):
-        self.model.ref_cpu_info()
+        # self.model.ref_cpu_info()
         self.model.get_proc_info()
         return True
     
