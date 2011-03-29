@@ -54,7 +54,7 @@ class ProcMntrCtrl (Controller):
 
         self.view['hardware_table'].resize(len(self.model.cpuinfo)+1, 2)
         
-        for (id, core) in zip(range(len(self.model.cpuinfo)), self.model.cpuinfo):
+        for (id, core) in enumerate(self.model.cpuinfo):
             self.view['cpu%d_label' % id] = gtk.Label('Processor %d:' % id)
             self.view['hardware_table'].attach(self.view['cpu%d_label' % id], 0, 1, id+1, id+2, gtk.FILL, gtk.FILL)
 
