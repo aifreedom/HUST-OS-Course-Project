@@ -16,6 +16,7 @@ class ProcMntrCtrl (Controller):
         self.sort_order = gtk.SORT_ASCENDING
         view['col_pid'].connect('clicked', self.on_column_clicked, 0)
         view['col_proc'].connect('clicked', self.on_column_clicked, 1)
+        view['col_state'].connect('clicked', self.on_column_clicked, 2)
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
 
 
@@ -33,6 +34,7 @@ class ProcMntrCtrl (Controller):
         self.model.ref_cpu_info()
 
     def on_button_end_clicked(self, button):
+        print 'end'
         os.kill(self.curson_pid, signal.SIGTERM)
 
     def on_column_clicked(self, tc, user_data):
