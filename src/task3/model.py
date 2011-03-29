@@ -14,9 +14,9 @@ class ProcModel (Model):
         stat = [int(i) for i in stat[1:] if i != '']
         self.last_idle = sum(stat[1:])
         self.last_cpu = stat[3]
-        self.__get_system_info()
-        self.__get_cpu_info()
-        self.__get_mem_info()
+        self.get_system_info()
+        self.get_cpu_info()
+        self.get_mem_info()
         return
 
     def ref_cpu_info(self):
@@ -29,7 +29,7 @@ class ProcModel (Model):
         self.last_idle = now_idle
         self.last_cpu = now_cpu
 
-    def __get_system_info(self):
+    def get_system_info(self):
         self.release = getoutput('lsb_release -rs')
         self.release_code = getoutput('lsb_release -cs')
 
@@ -38,7 +38,7 @@ class ProcModel (Model):
         self.gnome_ver = tmp[0] + ' ' + tmp[-1]
 
 
-    def __get_cpu_info(self):
+    def get_cpu_info(self):
         self.cpuinfo = []
         cpuinfo = file('/proc/cpuinfo').read()
         
@@ -48,12 +48,16 @@ class ProcModel (Model):
                 if line.split(':')[0].strip() != '':
                     self.cpuinfo[-1][line.split(':')[0].strip()] = line.split(':')[1].strip()
 
-    def __get_mem_info(self):
+    def get_mem_info(self):
         self.meminfo = {}
         meminfo = file('/proc/meminfo').readlines()
         for line in meminfo:
             if line.split(':')[0].strip() != '':
                 self.meminfo[line.split(':')[0].strip()] = line.split(':')[1].strip()
+
+    def get_proc_info(self):
+        os.listdir('/proc')
+        pass
                 
     pass
 
