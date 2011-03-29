@@ -1,7 +1,8 @@
 from gtkmvc import Controller
 import gobject
 import gtk
-import commands
+import signal
+import os
 
 class ProcMntrCtrl (Controller):
     """Handles signal processing, and keeps alignment of model and
@@ -11,23 +12,18 @@ class ProcMntrCtrl (Controller):
         # sets initial values for the view
         view['main_window'].show()
         view.set_cpu_info(self.model.cpu_info)
+        view.set_proc_list_info(self.model.proc_list_store)
+        self.sort_order = gtk.SORT_ASCENDING
+        view['col_pid'].connect('clicked', self.on_column_clicked, 0)
+        view['col_proc'].connect('clicked', self.on_column_clicked, 1)
+        view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
 
-        tv = view['treeview']
-        tv.set_model(self.model.proc_list_store)
 
-        rend = gtk.CellRendererText()
-        col = gtk.TreeViewColumn('Pid', rend, text=0)
-        tv.append_column(col)
-
-        rend = gtk.CellRendererText()
-        col = gtk.TreeViewColumn('Process Name', rend, text=1)
-        tv.append_column(col)
-    
     # gtk signals
     def on_main_window_show(self, widget):
         self.__set_system_info()
         self.__set_hardware_info()
-        self.g_id = gobject.timeout_add(500, self.__ref_timer)
+        self.g_id = gobject.timeout_add_seconds(1, self.__ref_timer)
 
     def on_main_window_delete_event(self, window, event):
         gtk.main_quit()
@@ -36,14 +32,43 @@ class ProcMntrCtrl (Controller):
     def on_button_ref_clicked(self, button):
         self.model.ref_cpu_info()
 
+    def on_button_end_clicked(self, button):
+        os.kill(self.curson_pid, signal.SIGTERM)
+
+    def on_column_clicked(self, tc, user_data):
+        print "column clicked", tc, user_data
+        column = user_data
+        self.model.proc_list_store.set_sort_column_id(column, self.sort_order)
+
+        if self.sort_order == gtk.SORT_ASCENDING:
+            self.sort_order = gtk.SORT_DESCENDING
+        else:
+            self.sort_order = gtk.SORT_ASCENDING
+
+    def on_treeview_cursor_changed(self, treeview):
+        print "Treeview Cursor changed"
+        s = treeview.get_selection()
+        (ls, iter) = s.get_selected()
+        if iter is None:
+            print "nothing selected"
+        else:
+            self.curson_pid = ls.get_value(iter, 0)
+            data0 = ls.get_value(iter, 0)
+            data1 = ls.get_value(iter, 1)
+            print "Selected:", data0, data1
+
     # observable properties    
     def property_cpu_info_value_change(self, model, old, new):
         self.view.set_cpu_info(new)
         return
+
+    # def property_proc_list_store_value_change(self, model, old, new):
+    #     self.view.set_proc_list_info(new)
     
     # private methods
     def __ref_timer(self):
         self.model.ref_cpu_info()
+        self.model.get_proc_info()
         return True
     
     def __set_system_info(self):

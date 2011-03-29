@@ -17,6 +17,8 @@ class ProcModel (Model):
         stat = [int(i) for i in stat[1:] if i != '']
         self.last_idle = sum(stat[1:])
         self.last_cpu = stat[3]
+        self.proc_list_store = gtk.ListStore(int, str)
+
         self.get_system_info()
         self.get_cpu_info()
         self.get_mem_info()
@@ -60,11 +62,14 @@ class ProcModel (Model):
                 self.meminfo[line.split(':')[0].strip()] = line.split(':')[1].strip()
 
     def get_proc_info(self):
-        self.proc_list_store = gtk.ListStore(str, str)
+        self.proc_list_store.clear()
         proc = [pid for pid in os.listdir('/proc') if str.isdigit(pid)]
         for pid in proc:
             stat = file(os.path.join('/', 'proc', pid, 'stat')).read().split(' ')
-            self.proc_list_store.append([stat[0], stat[1]])
+            iter = self.proc_list_store.append((int(stat[0]), stat[1], ))
+            self.proc_list_store.set(iter)
+            # self.proc_list_store.append([stat[0], stat[1]])
+            
         pass
                 
     pass
