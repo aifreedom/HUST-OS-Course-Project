@@ -27,6 +27,9 @@ class Monitor (View):
         col.set_clickable(True)
         tv.append_column(col)
         
+        col = self['col_state'] = gtk.TreeViewColumn('State', rend, text=2)
+        col.set_clickable(True)
+        tv.append_column(col)
         pass
         
     pass
