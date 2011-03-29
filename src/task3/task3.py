@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import gtk
 
 if __name__ == "__main__":
