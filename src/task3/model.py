@@ -1,7 +1,10 @@
 import _importer
 from gtkmvc import Model
+import gtk
 import re
 from commands import getoutput
+import os
+import os.path
 
 class ProcModel (Model):
     __observables__ = ('cpu_info', )
@@ -17,6 +20,7 @@ class ProcModel (Model):
         self.get_system_info()
         self.get_cpu_info()
         self.get_mem_info()
+        self.get_proc_info()
         return
 
     def ref_cpu_info(self):
@@ -56,7 +60,11 @@ class ProcModel (Model):
                 self.meminfo[line.split(':')[0].strip()] = line.split(':')[1].strip()
 
     def get_proc_info(self):
-        os.listdir('/proc')
+        self.proc_list_store = gtk.ListStore(str, str)
+        proc = [pid for pid in os.listdir('/proc') if str.isdigit(pid)]
+        for pid in proc:
+            stat = file(os.path.join('/', 'proc', pid, 'stat')).read().split(' ')
+            self.proc_list_store.append([stat[0], stat[1]])
         pass
                 
     pass
