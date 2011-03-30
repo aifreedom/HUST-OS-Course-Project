@@ -1,6 +1,7 @@
 from gtkmvc import Controller
 import gobject
 import gtk
+from gtk.gdk import Color
 import signal
 import os
 
@@ -23,6 +24,8 @@ class ProcMntrCtrl (Controller):
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
         view['cpu_monitor'].history = self.model.cpu_history
         view['cpu_monitor'].maxlen = self.maxlen
+        view['mem_monitor'].history = self.model.mem_history
+        view['mem_monitor'].maxlen = self.maxlen
 
 
     # gtk signals
@@ -31,19 +34,45 @@ class ProcMntrCtrl (Controller):
         self.__set_hardware_info()
         self.g_id = gobject.timeout_add_seconds(1, self.__ref_timer)
 
-    def on_main_window_delete_event(self, window, event):
+    def on_menu_quit_activate(self, item):
         gtk.main_quit()
         return True
 
-    def on_button_ref_clicked(self, button):
-        self.model.ref_cpu_info()
+    def on_proc_pause_activate(self, item):
+        os.kill(self.curson_pid, signal.SIGSTOP)
+        return True
+    
+    def on_proc_continue_activate(self, item):
+        os.kill(self.curson_pid, signal.SIGCONT)
+        return True
+    
+    def on_proc_end_activate(self, item):
+        os.kill(self.curson_pid, signal.SIGTERM)
+        return True
+    
+    def on_proc_kill_activate(self, item):
+        os.kill(self.curson_pid, signal.SIGKILL)
+        return True
+    
+    def on_main_window_delete_event(self, window, event):
+        os.kill(self.curson_pid, signal.SIGTERM)
+        return True
+
+    def on_button_cpu_prcnt_color_set(self, colorbutton):
+        c = colorbutton.get_color()
+        self.view['cpu_monitor'].line_color = (
+            c.red_float, c.green_float, c.blue_float)
+
+    def on_button_mem_prcnt_color_set(self, colorbutton):
+        c = colorbutton.get_color()
+        self.view['mem_monitor'].line_color = (
+            c.red_float, c.green_float, c.blue_float)
 
     def on_button_end_clicked(self, button):
-        print 'end'
+        # TODO: add a confirmation dialog
         os.kill(self.curson_pid, signal.SIGTERM)
 
     def on_column_clicked(self, tc, user_data):
-        print "column clicked", tc, user_data
         column = user_data
         self.model.proc_list_store.set_sort_column_id(column, self.sort_order)
 
@@ -53,52 +82,60 @@ class ProcMntrCtrl (Controller):
             self.sort_order = gtk.SORT_ASCENDING
 
     def on_treeview_cursor_changed(self, treeview):
-        print "Treeview Cursor changed"
         s = treeview.get_selection()
         (ls, iter) = s.get_selected()
         if iter is None:
-            print "nothing selected"
             self.view['button_end'].set_sensitive(False)
+            self.view['proc_pause'].set_sensitive(False)
+            self.view['proc_continue'].set_sensitive(False)
+            self.view['proc_kill'].set_sensitive(False)
+            self.view['proc_end'].set_sensitive(False)
         else:
             self.curson_pid = ls.get_value(iter, 0)
-            data0 = ls.get_value(iter, 0)
-            data1 = ls.get_value(iter, 1)
             self.view['button_end'].set_sensitive(True)
-            print "Selected:", data0, data1
+            self.view['proc_pause'].set_sensitive(True)
+            self.view['proc_continue'].set_sensitive(True)
+            self.view['proc_kill'].set_sensitive(True)
+            self.view['proc_end'].set_sensitive(True)
+
+    def on_notebook1_switch_page(self, notebook, page, page_num):
+        if page_num != 1:
+            self.view['button_end'].set_sensitive(False)
+            self.view['proc_pause'].set_sensitive(False)
+            self.view['proc_continue'].set_sensitive(False)
+            self.view['proc_kill'].set_sensitive(False)
+            self.view['proc_end'].set_sensitive(False)
+        else:
+            self.on_treeview_cursor_changed(self.view['treeview'])
+
+
+    def on_main_window_delete_event(self, widget, event):
+        gtk.main_quit()
 
     # observable properties
     def property_cpu_prcnt_value_change(self, model, old, new):
         self.view.set_cpu_info(new)
-        return
-
-    def property_mem_prcnt_value_change(self, model, old, new):
-        model.history['mem'].append(new)
-        return
 
     def property_cpu_history_after_change(self, model, instance,
                                           name, res, args, kwargs):
         if len(instance) > self.maxlen:
             del(instance[0])
-        # self.view['cpu_monitor'].draw_curve(instance, self.maxlen)
         self.view['cpu_monitor'].queue_draw()
-        return
     
-    def property_sgn_signal_emit(self, model, arg):
-        if arg == 'cpu':
-            if len(model.history[arg]) > self.maxlen:
-                del(model.history[info.arg][0])
-            # self.view[info.arg + '_monitor'].draw_curve(
-            #     model.history[info.arg])
-                
-                    
+    def property_mem_prcnt_value_change(self, model, old, new):
+        self.view.set_mem_info(new)
 
-    # def property_proc_list_store_value_change(self, model, old, new):
-    #     self.view.set_proc_list_info(new)
-    
+    def property_mem_history_after_change(self, model, instance,
+                                          name, res, args, kwargs):
+        if len(instance) > self.maxlen:
+            del(instance[0])
+        self.view['mem_monitor'].queue_draw()
+
     # private methods
     def __ref_timer(self):
         # self.model.ref_cpu_info()
         self.model.get_proc_info()
+        self.model.get_mem_info()
         return True
     
     def __set_system_info(self):

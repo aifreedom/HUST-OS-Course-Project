@@ -25,7 +25,7 @@ class CPUStat:
     
 
 class ProcModel (Model):
-    __observables__ = ('*_prcnt', '*_history',)
+    __observables__ = ('mem_*', 'cpu_*',)
     # cpu_info = '0.0'
     cpu_prcnt = 0.0
     mem_prcnt = 0.0
@@ -97,6 +97,16 @@ class ProcModel (Model):
             if line.split(':')[0].strip() != '':
                 self.meminfo[line.split(':')[0].strip()] = line.split(':')[1].strip()
 
+        mi = self.meminfo
+        self.mem_prcnt = (float(int(mi['MemTotal'].split(' ')[0])
+                                - int(mi['MemFree'].split(' ')[0])
+                                - int(mi['Buffers'].split(' ')[0])
+                                - int(mi['Cached'].split(' ')[0]))
+                          / int(mi['MemTotal'].split(' ')[0])) * 100
+        self.mem_history.append(self.mem_prcnt)
+
+
+
     def get_proc_info(self):
         try:
             stat = open(os.path.join('/', 'proc', 'stat')).readlines()
@@ -120,7 +130,6 @@ class ProcModel (Model):
         self.cpu_prcnt = CPUStat.diff(self.old_overall_stat, self.new_overall_stat)
         self.cpu_history.append(self.cpu_prcnt)
         
-
         try:
             proc = set((pid for pid in os.listdir(os.path.join('/', 'proc'))
                     if str.isdigit(pid)))

@@ -2,24 +2,40 @@ import _importer
 
 from gtkmvc import View
 import gtk
+from gtk.gdk import Color
 from math import pi
 import cairo
 
 class MonitorWindow(View):
     glade = "MonitorWindow.glade"
     top = "main_window"
+    cpu_color = (1.0, 0.0, 0.0)
+    mem_color = (0.0, 0.0, 1.0)
     
     def __init__(self):
         View.__init__(self)
 
-        self['cpu_monitor'] = Monitor()
+        self['cpu_monitor'] = Monitor(self.cpu_color)
         self['cpu_monitor'].show()
         self['box_cpu'].pack_start(self['cpu_monitor'])
     
+        self['mem_monitor'] = Monitor(self.mem_color)
+        self['mem_monitor'].show()
+        self['box_mem'].pack_start(self['mem_monitor'])
+
+        self['button_cpu_prcnt'].set_color(
+            Color(*(self['cpu_monitor'].line_color)))
+        self['button_mem_prcnt'].set_color(
+            Color(*(self['mem_monitor'].line_color)))
+        
     def set_cpu_info(self, msg):
-        self['label5'].set_text('%.2f %%' % msg)
+        self['cpu_prcnt'].set_text('CPU %.2f %%' % msg)
         return
-    
+
+    def set_mem_info(self, msg):
+        self['mem_prcnt'].set_text('Memory %.2f %%' % msg)
+        return
+
     def set_proc_list_info(self, tv_model):
         tv = self['treeview']
         tv.set_model(tv_model)
@@ -51,6 +67,7 @@ class Monitor(gtk.DrawingArea):
     # Draw in response to an expose-event
     __gsignals__ = { "expose-event": "override" }
     history = []
+    maxlen = 0
 
     bg_color = (.7, .7, .7)
     monitor_color = (1, 1, 1)
@@ -64,9 +81,10 @@ class Monitor(gtk.DrawingArea):
     time_grid = 72
     load_grid = 40
 
-    def __init__(self):
+    def __init__(self, line_color):
         gtk.DrawingArea.__init__(self)
         # self.set_double_buffered(False)
+        self.line_color = line_color
 
     
     # Handle the expose-event by drawing
@@ -159,7 +177,7 @@ class Monitor(gtk.DrawingArea):
         history.reverse()
 
         cr.save()
-        cr.set_source_rgb(1, 0, 0)
+        cr.set_source_rgb(*self.line_color)
         
         cr.translate(*self.p_upleft)
         cr.scale(width, height)
@@ -167,11 +185,9 @@ class Monitor(gtk.DrawingArea):
         cr.translate(-1, -1)
         cr.scale(1.0/width, 1.0/height)
 
-        step = width / (self.maxlen-1)
+        step = float(width) / (self.maxlen-1)
         for i, j in enumerate(history):
-            # print (i+1)*step, j*height
-            cr.set_source_rgba(1, 0, 0, 1)
-            cr.line_to((i+1)*step, j*height)
+            cr.line_to(i*step, j*height)
         cr.stroke()
         cr.restore()
 
