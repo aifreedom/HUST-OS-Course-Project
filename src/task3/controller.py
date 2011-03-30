@@ -21,6 +21,8 @@ class ProcMntrCtrl (Controller):
         view['col_cpu'].connect('clicked', self.on_column_clicked, 2)
         view['col_mem'].connect('clicked', self.on_column_clicked, 3)
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
+        view['cpu_monitor'].history = self.model.cpu_history
+        view['cpu_monitor'].maxlen = self.maxlen
 
 
     # gtk signals
@@ -77,7 +79,8 @@ class ProcMntrCtrl (Controller):
                                           name, res, args, kwargs):
         if len(instance) > self.maxlen:
             del(instance[0])
-        self.view['cpu_monitor'].draw_curve(instance, self.maxlen)
+        # self.view['cpu_monitor'].draw_curve(instance, self.maxlen)
+        self.view['cpu_monitor'].queue_draw()
         return
     
     def property_sgn_signal_emit(self, model, arg):

@@ -52,118 +52,127 @@ class Monitor(gtk.DrawingArea):
     __gsignals__ = { "expose-event": "override" }
     history = []
 
-    bg_color = (.5, .5, .5)
+    bg_color = (.7, .7, .7)
     monitor_color = (1, 1, 1)
-    p_upleft = (20, 10)
-    padding = 5
+    
+    help_line_color = (0, 0, 0)
+    help_line_width = 0.5
+    help_line_dash  = (3,)
+    
+    p_upleft = (40, 10)
+    padding = (5, 20)
+    time_grid = 72
+    load_grid = 40
 
     def __init__(self):
         gtk.DrawingArea.__init__(self)
-        self.set_double_buffered(False)
+        # self.set_double_buffered(False)
 
     
     # Handle the expose-event by drawing
     def do_expose_event(self, event):
         # Create the cairo context
-        self.cr = self.window.cairo_create()
+        cr = self.window.cairo_create()
 
         # Restrict Cairo to the exposed area; avoid extra work
-        self.cr.rectangle(event.area.x, event.area.y,
+        cr.rectangle(event.area.x, event.area.y,
                           event.area.width, event.area.height)
-        self.cr.clip()
+        cr.clip()
 
-        self.width = self.window.get_size()[0]-self.padding-self.p_upleft[0]
-        self.height = self.window.get_size()[1]-self.padding-self.p_upleft[1]
-        print self.width, self.height
+
+        width, height = (i-j-k for i, j, k in
+                         zip(self.window.get_size(), self.padding,
+                             self.p_upleft))
         
-        self.draw_cord(*self.window.get_size())
+        self.draw_cord(cr, width, height)
+        self.draw_curve(cr, width, height)
         # print dir(event)
+
+    def draw_text(self, cr, text, x, y):
+        (xbearing, ybearing,
+         fwidth, fheight,
+         xadvance, yadvance) = cr.text_extents(text)
+        cr.move_to(x - fwidth - 5, y + fheight/2)
+        cr.show_text(text)
+        cr.stroke()
         
-    def draw_cord(self, width, height):
-        cr = self.cr
-        # print 'cord'
-        # draw the canvas
+    def draw_cord(self, cr, width, height):
         cr.set_source_rgb(*self.bg_color)
-        cr.rectangle(0, 0, width, height)
+        cr.rectangle(0, 0, *self.window.get_size())
         cr.fill()
         
         cr.set_source_rgb(*self.monitor_color)
 
         cr.save()
         cr.translate(*self.p_upleft)
-        cr.rectangle(0, 0, self.width, self.height)
-        cr.fill()
-        cr.restore()
-        # self.draw_curve(map(lambda x, y: x*y, range(0, 100), [0.01]*100), 100)
-
-    def draw_curve(self, his, maxlen):
-        if self.window:
-            self.draw_cord(*self.window.get_size())
-            cr = self.cr
-            history = his[:]
-            # history[0] = 0.3
-            history.reverse()
-            history = [1-i for i in history]
-            # print 'before'
-            # cr.set_source_rgb(1, 0, 0)
-            # cr.rectangle(10, 10, 100, 100)
-            # cr.fill()
-            # print 'after'
-            
-            cr.save()
-            cr.set_line_width(0.01)
-            cr.set_source_rgb(1, 0, 0)
-            cr.translate(*self.p_upleft)
-            cr.scale(self.width, self.height)
-            cr.rotate(pi)
-            cr.translate(-1, -1)
-
-            # cr.move_to(0, 0)
-            # cr.line_to(1, 1)
-            # cr.stroke()
-            # cr.arc(0, 0, 0.1, 0, pi*2)
-            # cr.stroke()
-            
-            step = 1.0 / (maxlen-1)
-            cr.move_to(0, history[0])
-            print 0, history[0]
-            for i, j in enumerate(history[1:]):
-                print (i+1)*step, j
-                cr.set_source_rgba(1, 0, 0, 1)
-                cr.line_to((i+1)*step, j)
-            print ''
-            cr.stroke()
-            cr.restore()
-        pass
-
-    def draw(self, width, height):
-        cr = self.cr
-        width = min(width, height)
-        height = min(width, height)
-        
-        cr.set_source_rgb(0.5, 0.5, 0.5)
         cr.rectangle(0, 0, width, height)
         cr.fill()
+        cr.restore()
 
-        # draw a rectangle
-        cr.set_source_rgb(1.0, 1.0, 1.0)
-        cr.rectangle(10, 10, width - 20, height - 20)
-        cr.fill()
+        cr.save()
+        
+        cr.translate(*self.p_upleft)
 
-        # draw lines
-        cr.set_source_rgb(0.0, 0.0, 0.8)
-        cr.move_to(width / 3.0, height / 3.0)
-        cr.rel_line_to(0, height / 6.0)
-        cr.move_to(2 * width / 3.0, height / 3.0)
-        cr.rel_line_to(0, height / 6.0)
-        cr.stroke()
+        cr.set_source_rgb(*self.help_line_color)
+        cr.set_line_width(self.help_line_width)
+        cr.set_dash(self.help_line_dash)
+        
+        load_step = float(height) / (height / self.load_grid)
 
-        # and a circle
-        cr.set_source_rgb(1.0, 0.0, 0.0)
-        radius = min(width, height)
-        cr.arc(width / 2.0, height / 2.0, radius / 2.0 - 20, 0, 2 * pi)
+        cr.save()
+        cr.select_font_face('Serif', cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(10)
+        for i in range(int(height / load_step) - 1):
+            cr.move_to(0, (i+1)*load_step)
+            cr.line_to(width, (i+1)*load_step)
+            cr.stroke()
+            self.draw_text(cr,
+                           '%.0f %%' % (100 -
+                                        float(i+1) /
+                                        (height / load_step)
+                                        * 100),
+                           0, (i+1)*load_step)
+        cr.restore()
+        self.draw_text(cr, '100 %', 0, 0)
+        self.draw_text(cr, '0 %', 0, height)
+            
+        time_step = float(width) / 6
+        for i in range(int(width / time_step) - 1):
+            text = '%d s' % (50 - i*10)
+            x = (i+1)*time_step
+            y = height
+            (xbearing, ybearing,
+             fwidth, fheight,
+             xadvance, yadvance) = cr.text_extents(text)
+            cr.move_to(x - fwidth/2 , y + fheight + 5)
+            cr.show_text(text)
+            cr.stroke()
+            cr.move_to(x, 0)
+            cr.line_to(x, y)
+            cr.stroke()
+            
+        cr.restore()
+
+
+    def draw_curve(self, cr, width, height):
+        history = [i/100 for i in self.history]
+        history.reverse()
+
+        cr.save()
+        cr.set_source_rgb(1, 0, 0)
+        
+        cr.translate(*self.p_upleft)
+        cr.scale(width, height)
+        cr.rotate(pi)
+        cr.translate(-1, -1)
+        cr.scale(1.0/width, 1.0/height)
+
+        step = width / (self.maxlen-1)
+        for i, j in enumerate(history):
+            # print (i+1)*step, j*height
+            cr.set_source_rgba(1, 0, 0, 1)
+            cr.line_to((i+1)*step, j*height)
         cr.stroke()
-        cr.arc(width / 2.0, height / 2.0, radius / 3.0 - 10, pi / 3, 2 * pi / 3)
-        cr.stroke()
+        cr.restore()
 
     pass
