@@ -25,18 +25,22 @@ class CPUStat:
     
 
 class ProcModel (Model):
-    __observables__ = ('cpu_prcnt', )
+    __observables__ = ('*_prcnt', '*_history',)
     # cpu_info = '0.0'
-    cpu_prcnt = '0.0'
-    proc_list_store = gtk.ListStore(int, str, float)
+    cpu_prcnt = 0.0
+    mem_prcnt = 0.0
+    proc_list_store = gtk.ListStore(int, str, int, str)
     proc_list = {}
     meminfo = {}
     old_core_stat = {}
     new_core_stat = {}
     old_proc_stat = {}
     new_proc_stat = {}
+    cpu_history = []
+    mem_history = []
     
     pid_stat_cols = ('pid',  'comm',  'state',  'ppid',  'pgrp',  'session',  'tty_nr',  'tpgid',  'flags',  'minflt',  'cminflt',  'majflt',  'cmajflt',  'utime',  'stime',  'cutime',  'cstime',  'priority',  'nice',  'num_threads',  'itrealvalue',  'starttime',  'vsize',  'rss',  'rsslim',  'startcode',  'endcode',  'startstack',  'kstkesp',  'kstkeip',  'signal',  'blocked',  'sigignore',  'sigcatch',  'wchan',  'nswap',  'cnswap',  'exit_signal',  'processor',  'rt_priority ',  'policy',  'delayacct_blkio_ticks',  'guest_time',  'cguest_time', )
+    pid_statm_cols = ("size", "resident", "share", "text", "lib", "data", "dt",)
     cpuline_pattern = re.compile(r'^cpu( |\d+) ([\d ]+)$')
 
     def __init__(self):
@@ -45,7 +49,8 @@ class ProcModel (Model):
         # stat = [int(i) for i in stat[1:] if i != '']
         # self.last_idle = sum(stat[1:])
         # self.last_cpu = stat[3]
-        
+        self.proc_list_store.set_sort_func(3, self.compare, 3)
+
         self.get_system_info()
         self.get_cpu_info()
         self.get_mem_info()
@@ -112,8 +117,10 @@ class ProcModel (Model):
                 self.new_core_stat[ma.group(1)] = CPUStat(ma.group(2))
                 pass
 
-        self.cpu_prcnt = str(CPUStat.diff(self.old_overall_stat, self.new_overall_stat))
+        self.cpu_prcnt = CPUStat.diff(self.old_overall_stat, self.new_overall_stat)
+        self.cpu_history.append(self.cpu_prcnt)
         
+
         try:
             proc = set((pid for pid in os.listdir(os.path.join('/', 'proc'))
                     if str.isdigit(pid)))
@@ -122,15 +129,15 @@ class ProcModel (Model):
         
         total_time = self.new_overall_stat.total_time
         for pid in proc:
-            
             try:
                 stat = file(os.path.join('/', 'proc', pid, 'stat')).read().split(' ')
+                statm = file(os.path.join('/', 'proc', pid, 'statm')).read().split(' ')
                 cmdline = file(os.path.join('/', 'proc', pid, 'cmdline')).read().split('\0')[0].split(' ')[0]
             except:
                 pass
 
             # Parse new stat
-            new_list = dict(zip(self.pid_stat_cols, stat))
+            new_list = dict(zip(self.pid_stat_cols+self.pid_statm_cols, stat+statm))
             new_stat = CPUStat(busy_time=int(new_list['utime']) + int(new_list['stime']), total_time=total_time)
             new_list['name'] = os.path.split(cmdline)[1]
             if (new_list['name'] == ''):
@@ -143,7 +150,8 @@ class ProcModel (Model):
                 
                 new_list['cpu_prcnt'] = 100.0
                 new_list['iter'] = it = self.proc_list_store.append(
-                    (int(new_list['pid']), new_list['comm'], new_list['cpu_prcnt']))
+                    (int(new_list['pid']), new_list['comm'],
+                     new_list['cpu_prcnt'], float(new_list['resident'])/1024))
 
 
             old_list = self.proc_list[pid]
@@ -156,7 +164,9 @@ class ProcModel (Model):
             self.proc_list_store.set(it,
                                      0, int(new_list['pid']),
                                      1, new_list['name'],
-                                     2, float(new_list['cpu_prcnt']),)
+                                     2, int(new_list['cpu_prcnt']),
+                                     3, '%.2f MiB' % (float(new_list['resident'])/1024))
+
             
             # Update the list 
             for key, val in new_list.items():
@@ -191,6 +201,17 @@ class ProcModel (Model):
                 pass
 
         # end of cpuinfo loop
-                
+
+    def compare(self, treemodel, iter1, iter2, user_data):
+        column = user_data
+        v1 = float(treemodel.get_value(iter1, column).split(' ')[0])
+        v2 = float(treemodel.get_value(iter2, column).split(' ')[0])
+        if  v1 == v2:
+            return 0
+        elif v1 < v2:
+            return -1
+        else:
+            return 1
+
     pass
 

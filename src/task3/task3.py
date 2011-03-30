@@ -6,10 +6,10 @@ if __name__ == "__main__":
 
     from model import ProcModel
     from controller import ProcMntrCtrl
-    from view import Monitor
+    from view import MonitorWindow
     
     m = ProcModel()
-    v = Monitor()
+    v = MonitorWindow()
     c = ProcMntrCtrl(m,v)
 
     gtk.main()

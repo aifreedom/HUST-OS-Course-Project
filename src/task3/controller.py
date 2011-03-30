@@ -8,6 +8,8 @@ class ProcMntrCtrl (Controller):
     """Handles signal processing, and keeps alignment of model and
     view"""
 
+    maxlen = 60
+    
     def register_view(self, view):
         # sets initial values for the view
         view['main_window'].show()
@@ -17,6 +19,7 @@ class ProcMntrCtrl (Controller):
         view['col_pid'].connect('clicked', self.on_column_clicked, 0)
         view['col_proc'].connect('clicked', self.on_column_clicked, 1)
         view['col_cpu'].connect('clicked', self.on_column_clicked, 2)
+        view['col_mem'].connect('clicked', self.on_column_clicked, 3)
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
 
 
@@ -61,10 +64,30 @@ class ProcMntrCtrl (Controller):
             self.view['button_end'].set_sensitive(True)
             print "Selected:", data0, data1
 
-    # observable properties    
+    # observable properties
     def property_cpu_prcnt_value_change(self, model, old, new):
         self.view.set_cpu_info(new)
         return
+
+    def property_mem_prcnt_value_change(self, model, old, new):
+        model.history['mem'].append(new)
+        return
+
+    def property_cpu_history_after_change(self, model, instance,
+                                          name, res, args, kwargs):
+        if len(instance) > self.maxlen:
+            del(instance[0])
+        self.view['cpu_monitor'].draw_curve(instance, self.maxlen)
+        return
+    
+    def property_sgn_signal_emit(self, model, arg):
+        if arg == 'cpu':
+            if len(model.history[arg]) > self.maxlen:
+                del(model.history[info.arg][0])
+            # self.view[info.arg + '_monitor'].draw_curve(
+            #     model.history[info.arg])
+                
+                    
 
     # def property_proc_list_store_value_change(self, model, old, new):
     #     self.view.set_proc_list_info(new)
