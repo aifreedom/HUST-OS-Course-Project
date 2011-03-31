@@ -4,12 +4,10 @@ import gtk
 from gtk.gdk import Color
 import signal
 import os
+import dbus
 
 class ProcMntrCtrl (Controller):
-    """Handles signal processing, and keeps alignment of model and
-    view"""
-
-    maxlen = 60
+    maxlen = 61
     
     def register_view(self, view):
         # sets initial values for the view
@@ -108,7 +106,34 @@ class ProcMntrCtrl (Controller):
         else:
             self.on_treeview_cursor_changed(self.view['treeview'])
 
+    def on_menu_shutdown_activate(self, item):
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('org.freedesktop.ConsoleKit', '/org/freedesktop/ConsoleKit/Manager')
+        iface = dbus.Interface(proxy, 'org.freedesktop.ConsoleKit.Manager')
+        iface.Stop()
 
+
+    def on_menu_reboot_activate(self, item):
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('org.freedesktop.ConsoleKit', '/org/freedesktop/ConsoleKit/Manager')
+        iface = dbus.Interface(proxy, 'org.freedesktop.ConsoleKit.Manager')
+        iface.Restart()
+ 
+ 
+    def on_menu_hibernate_activate(self, item):
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('org.freedesktop.UPower', '/org/freedesktop/UPower')
+        iface = dbus.Interface(proxy, 'org.freedesktop.UPower')
+        iface.Hibernate(ignore_reply=True)
+
+ 
+    def on_menu_suspend_activate(self, item):
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('org.freedesktop.UPower', '/org/freedesktop/UPower')
+        iface = dbus.Interface(proxy, 'org.freedesktop.UPower')
+        iface.Suspend(ignore_reply=True)
+         
+                             
     def on_main_window_delete_event(self, widget, event):
         gtk.main_quit()
 
