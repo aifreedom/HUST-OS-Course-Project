@@ -10,13 +10,11 @@ int main(int argc, char *argv[])
      {
           pid[i] = fork();
           if (pid[i] == 0)
-          {
-               printf("Running gtk-demo with execl\n");
                execlp("./gtk-demo", "gtk-demo", NULL);
-               printf("Done!\n");
-               break;
-          }
+          else
+               printf("Process %d: pid = %d\n", i,  pid[i]);
      }
-     wait(&status);
+     for (i=0; i<3; i++)
+          wait(pid[i], &status, 0);
      return 0;
 }
