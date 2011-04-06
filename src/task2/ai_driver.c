@@ -78,8 +78,6 @@ static void generate(void)
 {
      char* p = buf;
      int last_put;
-     printk(KERN_INFO "%s: generate starts with next=%d, buf_len=%d, buf_ptr-buf=%d.\n",
-            DEVICE_NAME, next, buf_len, buf_ptr - buf);
      buf_len = 0;
      while (buf_len < BUF_LEN) {
           last_put = sprintf(p, "%d\n", next++);
@@ -90,10 +88,7 @@ static void generate(void)
           buf_len -= last_put;
           next--;
      }
-     // buf[buf_len++] = '\0';
      buf_ptr = buf;
-     printk(KERN_INFO "%s: generate ends with next=%d, buf_len=%d, buf_ptr-buf=%d.\n",
-            DEVICE_NAME, next, buf_len, buf_ptr - buf);
 }
 
 static ssize_t ai_read(struct file *filp, char *buffer,
@@ -101,10 +96,6 @@ static ssize_t ai_read(struct file *filp, char *buffer,
 {
      int bytes_read = 0;
      int i;
-     printk(KERN_INFO "%s: read --- ", DEVICE_NAME);
-     for (i=0; i<buf_len; i++)
-          printk(KERN_INFO "%c", buf[i]);
-     printk(KERN_INFO "\n");
      while (length) {
           if (buf_ptr - buf >= buf_len)
                generate();
