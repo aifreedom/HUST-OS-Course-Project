@@ -12,3 +12,4 @@ bin/*
 /src/task1/task1
 *.ropeproject
 *.pyc
+/report/*
