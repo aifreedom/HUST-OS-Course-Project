@@ -26,10 +26,9 @@ class CPUStat:
 
 class ProcModel (Model):
     __observables__ = ('mem_*', 'cpu_*',)
-    # cpu_info = '0.0'
     cpu_prcnt = 0.0
     mem_prcnt = 0.0
-    proc_list_store = gtk.ListStore(int, str, int, str)
+    proc_list_store = gtk.ListStore(int, str, int, str, str)
     proc_list = {}
     meminfo = {}
     old_core_stat = {}
@@ -45,10 +44,6 @@ class ProcModel (Model):
 
     def __init__(self):
         Model.__init__(self)
-        # stat = open('/proc/stat').readline().rstrip().split(' ')
-        # stat = [int(i) for i in stat[1:] if i != '']
-        # self.last_idle = sum(stat[1:])
-        # self.last_cpu = stat[3]
         self.proc_list_store.set_sort_func(3, self.compare, 3)
 
         self.get_system_info()
@@ -58,6 +53,20 @@ class ProcModel (Model):
         self.get_proc_info()
         return
 
+    def state_convert(self, state):
+        if state == 'R':
+            return 'Running'
+        elif state == 'S':
+            return 'Wait'
+        elif state == 'D':
+            return 'Uninterruptible wait'
+        elif state == 'Z':
+            return 'Zombie'
+        elif state == 'T':
+            return 'Stopped'
+        elif state == 'W':
+            return 'Paging'
+    
     def ref_cpu_info(self):
         stat = open('/proc/stat').readline().rstrip().split(' ')
         stat = [int(i) for i in stat[1:] if i != '']
@@ -151,7 +160,6 @@ class ProcModel (Model):
             new_list['name'] = os.path.split(cmdline)[1]
             if (new_list['name'] == ''):
                 new_list['name'] = new_list['comm'][1:-1]
-            # new_list['name'] = cmdline
 
             if not self.proc_list.has_key(pid):
                 self.proc_list[pid] = new_list
@@ -160,7 +168,9 @@ class ProcModel (Model):
                 new_list['cpu_prcnt'] = 100.0
                 new_list['iter'] = it = self.proc_list_store.append(
                     (int(new_list['pid']), new_list['comm'],
-                     new_list['cpu_prcnt'], float(new_list['resident'])/1024))
+                     new_list['cpu_prcnt'],
+                     float(new_list['resident'])/1024,
+                     self.state_convert(new_list['state'])))
 
 
             old_list = self.proc_list[pid]
@@ -174,7 +184,8 @@ class ProcModel (Model):
                                      0, int(new_list['pid']),
                                      1, new_list['name'],
                                      2, int(new_list['cpu_prcnt']),
-                                     3, '%.2f MiB' % (float(new_list['resident'])/1024))
+                                     3, '%.2f MiB' % (float(new_list['resident'])/1024),
+                                     4, self.state_convert(new_list['state']))
 
             
             # Update the list 
@@ -223,4 +234,5 @@ class ProcModel (Model):
             return 1
 
     pass
+
 

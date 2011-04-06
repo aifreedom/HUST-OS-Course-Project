@@ -19,6 +19,7 @@ class ProcMntrCtrl (Controller):
         view['col_proc'].connect('clicked', self.on_column_clicked, 1)
         view['col_cpu'].connect('clicked', self.on_column_clicked, 2)
         view['col_mem'].connect('clicked', self.on_column_clicked, 3)
+        view['col_state'].connect('clicked', self.on_column_clicked, 4)
         view['treeview'].connect("cursor-changed", self.on_treeview_cursor_changed)
         view['cpu_monitor'].history = self.model.cpu_history
         view['cpu_monitor'].maxlen = self.maxlen
@@ -158,7 +159,6 @@ class ProcMntrCtrl (Controller):
 
     # private methods
     def __ref_timer(self):
-        # self.model.ref_cpu_info()
         self.model.get_proc_info()
         self.model.get_mem_info()
         return True

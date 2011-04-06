@@ -59,6 +59,10 @@ class MonitorWindow(View):
         col = self['col_mem'] = gtk.TreeViewColumn('Memory', rend, text=3)
         col.set_clickable(True)
         tv.append_column(col)
+
+        col = self['col_state'] = gtk.TreeViewColumn('State', rend, text=4)
+        col.set_clickable(True)
+        tv.append_column(col)
         pass
         
     pass
@@ -83,7 +87,6 @@ class Monitor(gtk.DrawingArea):
 
     def __init__(self, line_color):
         gtk.DrawingArea.__init__(self)
-        # self.set_double_buffered(False)
         self.line_color = line_color
 
     
