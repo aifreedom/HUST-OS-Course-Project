@@ -10,6 +10,6 @@ aimod.ko:
 	make -C $(KDIR) M=$(PWD) modules
 
 clean:
-	rm -rf *.o .*.cmd *.ko *.mod.c .tmp_versions *.symvers *.order
+	rm -rf *.o .*.cmd *.ko *.mod.c .tmp_versions *.symvers *.order task2
 
 .PHONY: clean all
